@@ -54,11 +54,11 @@ def numb(c) :
             [ 8,  0,  0],
             [ 5,  6,  0]]], dtype=uint8)
     """
-    c_pad = util.pad(c,((1,1),(1,1),(1,1)), 'constant')
+    c_pad = util.pad(c, 1, 'constant')
     mask = c_pad > 0
     fil = 3**3 * ndimage.uniform_filter(c_pad.astype('float'), 
-                                        size = (3,3,3)) - 1
-    return (fil * mask)[1:-1,1:-1,1:-1].astype('uint8')
+                                        size=3) - 1
+    return (fil * mask)[1:-1, 1:-1, 1:-1].astype('uint8')
 
 
 def label_br(num):
@@ -119,11 +119,11 @@ def label_br(num):
             [0, 0, 0],
             [0, 0, 0]]], dtype=uint8)   
     """
-    br2 = num==2
-    br1 = num==1
-    branches = br1+br2
+    br2 = num == 2
+    br1 = num == 1
+    branches = br1 + br2
     label_branches = measure.label(branches, background=0)
-    return (label_branches+np.ones((label_branches.shape))).astype('uint8')
+    return (label_branches + np.ones_like(label_branches)).astype('uint8')
     
 
  
@@ -187,6 +187,7 @@ def label_nodes(num):
     """
     no = num>2
     label_n = measure.label(no, background=0)
+    # uint8 might be a problem for large arrays with more than 255 nodes...
     return (label_n+np.ones((label_n.shape))).astype('uint8')
     
     
@@ -269,16 +270,13 @@ def neigh_br(arr_nodes, arr_br):
     el = morphology.cube(3)
     nodes = np.unique(arr_nodes)[1:]
     for j in nodes:
-        neigh = [0]
         mask = arr_nodes==j
         dil = morphology.binary_dilation(mask, el)
-        vol_c = arr_br*(dil.astype('uint8'))
-        for k in np.unique(vol_c):
-            if (k>0):
-                neigh = np.append(neigh, k)
-        G.add_node(j, neigh = neigh[1:])
+        vol_c = arr_br * (dil.astype('uint8'))
+        G.add_node(j, neigh=np.unique(vol_c)[1:])
     return G
-    
+
+
 def create_con(graph, arr_br):
     """
     Creates the edges in the input graph with nodes that have
@@ -334,13 +332,17 @@ def create_con(graph, arr_br):
         for k in n[i]:
             flag = True            
             mask = arr_br==k
+            # you could compute all the length outside of the i loop
+            # and store them into a dictionary
+            # here they are computed many times
             le = len(np.transpose(np.nonzero(mask)))
             for l in nodes:
                 if ((k in n[l]) and (i != l)):
                     G.add_edge(i,l, length = le)
                     flag = False
-                    break                
-            if flag :
+                    break               
+            # not sure I understand the use of flag
+            if flag:
                 G.add_edge(i, G.number_of_nodes()+1, length = le)
             list_br = np.append(list_br, k)
     for i in np.unique(arr_br):
@@ -349,6 +351,7 @@ def create_con(graph, arr_br):
             le = len(np.transpose(np.nonzero(mask)))
             G.add_edge(G.number_of_nodes()+1, G.number_of_nodes()+2, length = le) 
     return G
+
 
 def add_isol_points(graph, arr_is):
     """
@@ -368,10 +371,4 @@ def add_isol_points(graph, arr_is):
     for i in np.unique(arr_is)[1:]:
         G.add_node(G.number_of_nodes()+1)
     return G
-        
-
-
-
-    
-    
     

@@ -34,6 +34,7 @@ def calc_graph(dat):
     -------
     G : a graph
     """
+    # this function could go to the label_method module instead
     dat_n = lb.numb(dat)
     dat_nodes = lb.label_nodes(dat_n)
     dat_br = lb.label_br(dat_n)
