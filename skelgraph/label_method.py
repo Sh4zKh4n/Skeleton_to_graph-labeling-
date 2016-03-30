@@ -56,6 +56,10 @@ def numb(c) :
             [ 8,  0,  0],
             [ 5,  6,  0]]], dtype=uint8)
     """
+#    c_pad = util.pad(c, 1, 'constant')
+#    mask = c_pad>0
+#    fil = 3**3 * ndimage.uniform_filter(c_pad.astype('float'), size=3) - 1
+#    return (fil * mask)[1:-1,1:-1,1:-1].astype('uint16')
     cube = np.ones((3,3,3))
     fil = signal.convolve(c, cube, mode='same') - 1
     return (fil * c).astype('uint8')
@@ -124,7 +128,6 @@ def label_br(num):
     branches = br1 + br2
     label_branches = measure.label(branches, background=0)
     return label_branches.astype('uint16')
-    
 
  
 def label_nodes(num):
@@ -188,11 +191,11 @@ def label_nodes(num):
     no = num>2
     label_n = measure.label(no, background=0)
     return label_n.astype('uint16')
-
-
     
+
+
 #This function is used for clearing the borders and applied to
-#both branches and nodes arrays.      
+#both branches and nodes arrays.    
 def rem_bound(arr_br):
     """
     Function clears the borders by removing the branches
@@ -281,7 +284,7 @@ def rem_bound(arr_br):
         a[find_br[i-1]] = a[find_br[i-1]] - mask * i
     return a
     
-
+   
 
 def neigh_br(arr_nodes, arr_br):
     """
@@ -434,8 +437,8 @@ def create_con(graph, arr_br):
             end_edges_flag = True  #flag helps to create end nodes
             for l in nodes[j:]:
                 if (k in n[l]):
-                #    if (k in list_br): #test for triple branches
-                #        akhjg
+                  #  if (k in list_br): #test for triple branches
+                  #      akhjg
                     G.add_edge(i,l, length = le_dict[k])
                     list_br = np.append(list_br, k)
                     end_edges_flag = False #branch connects two nodes and
@@ -446,4 +449,4 @@ def create_con(graph, arr_br):
                 G.add_edge(i, num_of_nodes, length = le_dict[k])
                 list_br = np.append(list_br, k)
 
-    return G
+    return G 
