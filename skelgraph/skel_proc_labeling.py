@@ -8,9 +8,6 @@ directly using the function from the label_method module.
 import numpy as np
 import label_method as lb
 
-data = np.load('/home/yuliya/Desktop/v34_0140_skel(200,600,400,700,500,700)filled.npy', mmap_mode='r')
-
-dat1 = data[:200, :150, :100]
 
 def calc_graph(dat):
     """
@@ -38,29 +35,12 @@ def calc_graph(dat):
     dat_n = lb.numb(dat)
     dat_nodes = lb.label_nodes(dat_n)
     dat_br = lb.label_br(dat_n)
+    dat_nodes = lb.rem_bound(dat_nodes)
+    dat_br = lb.rem_bound(dat_br)
     
     dat_G = lb.neigh_br(dat_nodes, dat_br)
     G = lb.create_con(dat_G, dat_br)
     return G
 
-def isolated_points(graph, dat):
-    """
-    Treats the isolated points and adds them to a graph as
-    the nodes.
-    
-    Parameters
-    ---------
-    graph : a graph
-    dat : 3D skeleton binary array
-    
-    Returns
-    -------
-    G : a copy of input graph with isolated nodes
-    """
-    G = graph.copy()
-    dat_n = lb.numb(dat)
-    dat_is = lb.label_iso(dat, dat_n)
-    G = lb.add_isol_points(G, dat_is)
-    return G
     
 

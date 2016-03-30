@@ -1,4 +1,4 @@
-from skelgraph.label_method import numb, label_nodes, label_br, neigh_br
+from skelgraph.label_method import numb, label_nodes, label_br, neigh_br, create_con 
 import numpy as np
 from numpy.testing import assert_equal, assert_raises
 import networkx as nx
@@ -34,3 +34,39 @@ def test_neigh_br():
     arr_br = label_br(num)
     G = neigh_br(arr_nodes, arr_br)
     assert np.all(nx.get_node_attributes(G, 'neigh')[1] == [1, 2, 3])
+
+def test_label_br():
+    num = np.array([[[0, 0, 0],
+                     [0, 0, 0],
+                     [0, 0, 0],
+                     [0, 0, 0]],
+                    [[2, 0, 0],
+                     [3, 4, 1],
+                     [3, 0, 0],
+                     [1, 0, 0]],
+                    [[0, 0, 0],
+                     [0, 0, 0],
+                     [0, 0, 0],
+                     [0, 0, 0]]])
+    assert np.all(np.unique(label_br(num)) == [0,1,2,3])
+    
+def test_create_con():
+    a = np.array([[[ 0.,  0.,  0.],
+                   [ 0.,  0.,  0.],
+                   [ 0.,  0.,  0.],
+                   [ 0.,  0.,  0.]],
+                  [[ 1.,  0.,  0.],
+                   [ 1.,  1.,  1.],
+                   [ 1.,  0.,  0.],
+                   [ 1.,  0.,  0.]],
+                  [[ 0.,  0.,  0.],
+                   [ 0.,  0.,  0.],
+                   [ 0.,  0.,  0.],
+                   [ 0.,  0.,  0.]]])
+    num = numb(a)
+    arr_nodes = label_nodes(num)
+    arr_br = label_br(num)
+    G = neigh_br(arr_nodes, arr_br)
+    G = create_con(G, arr_br)
+    assert np.all(G.edges() == [(1, 2), (1, 3), (1, 4)])
+    
