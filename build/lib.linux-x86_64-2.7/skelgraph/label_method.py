@@ -8,15 +8,12 @@ nodes and branches on the base of the neighborhood of each point.
 """
 
 from skimage import measure, morphology
+import numpy as np
 from skimage import util
-import numpy as np
-from scipy import ndimage, signal
+from scipy import ndimage
 import networkx as nx
-import tables as tb
-import numpy as np
 
-#This function now does not create triple branches and works properly.
-#It uses uniform filter.
+
 def numb(c) :
     """
     Counts the number of neighboring 1 for every nonzero
@@ -57,21 +54,11 @@ def numb(c) :
             [ 8,  0,  0],
             [ 5,  6,  0]]], dtype=uint8)
     """
-
-    fil = 3**3 * ndimage.uniform_filter(c.astype('float32'), 3, mode='constant')
-    mask = c>0
-    return (fil.astype('int8') * mask) - 1
- 
-#Here I tried different methods, but they are slower.   
-#def numb_convolve(c):
-#    cube = np.ones((3,3,3))
-#    fil = signal.convolve(c, cube, mode='same') - 1
-#    return (fil * c).astype('uint8')
-#    
-#def numb_un_f(c):
-#    fil = 3**3 * ndimage.uniform_filter(c.astype('float32'), 3, mode='constant') - 1
-#    mask = c>0
-#    return fil.astype('uint8') * mask
+    c_pad = util.pad(c, 1, 'constant')
+    mask = c_pad > 0
+    fil = 3**3 * ndimage.uniform_filter(c_pad.astype('float'), 
+                                        size=3) - 1
+    return (fil * mask)[1:-1, 1:-1, 1:-1].astype('uint8')
 
 
 def label_br(num):
@@ -133,9 +120,11 @@ def label_br(num):
             [0, 0, 0]]], dtype=uint8)   
     """
     br2 = num == 2
-    branches = br2
+    br1 = num == 1
+    branches = br1 + br2
     label_branches = measure.label(branches, background=0)
-    return label_branches.astype('uint32')
+    return (label_branches + np.ones_like(label_branches)).astype('uint8')
+    
 
  
 def label_nodes(num):
@@ -196,111 +185,34 @@ def label_nodes(num):
             [0, 0, 0],
             [0, 0, 0]]], dtype=uint8) 
     """
-    n1 = num>2
-    n2 = num==1
-    no = n1 + n2
+    no = num>2
     label_n = measure.label(no, background=0)
-    return label_n.astype('uint32')
-    
-def label_iso(num):
-    no = num==0
-    label_iso = measure.label(no, background=0)
-    return label_iso.astype('uint32')    
+    # uint8 might be a problem for large arrays with more than 255 nodes...
+    return (label_n+np.ones((label_n.shape))).astype('uint8')
     
     
-#This function is used for clearing the borders and applied to
-#both branches and nodes arrays.    
-def rem_bound(arr_br):
+def label_iso(skel, num):
     """
-    Function clears the borders by removing the branches
-    that touches them.
+    Returns the array where each region labels isolated points
+    (the number of neighbors 0) from 1 to N, where N is the
+    number of regions.
     
     Parameters
     ---------
-    arr_br : array that contains labeled branches
+    skel : binary array of skeleton
+    num : a 3D array counting the number of neighbors at each point
     
-    Examples
-    --------
-    >>>arr_br
-    >>>array([[[1, 0, 0, 0, 2],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 3, 0, 0],
-               [0, 0, 3, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[4, 0, 0, 0, 5],
-               [0, 4, 0, 5, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 6, 0, 0],
-               [0, 0, 6, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]]], dtype=uint16)
-    >>>rem_bound(arr_br)
-    >>>array([[[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 3, 0, 0],
-               [0, 0, 3, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]],
-              [[0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0]]], dtype=uint16)
-
+    Returns
+    -------
+    arr : an array of the same shape as the input with labeled regions
     """
-    find_br = ndimage.find_objects(arr_br)
-    a = np.copy(arr_br)
-    n0 = a.shape[0] - 1
-    n1 = a.shape[1] - 1
-    n2 = a.shape[2] - 1
-    for i in np.unique(arr_br[0,:,:])[1:]:
-        mask = a[find_br[i-1]]==i
-        a[find_br[i-1]] = a[find_br[i-1]] - mask * i
-    for i in np.unique(arr_br[n0,:,:])[1:]:
-        mask = a[find_br[i-1]]==i
-        a[find_br[i-1]] = a[find_br[i-1]] - mask * i
-    for i in np.unique(arr_br[:,0,:])[1:]:
-        mask = a[find_br[i-1]]==i
-        a[find_br[i-1]] = a[find_br[i-1]] - mask * i
-    for i in np.unique(arr_br[:,n1,:])[1:]:
-        mask = a[find_br[i-1]]==i
-        a[find_br[i-1]] = a[find_br[i-1]] - mask * i
-    for i in np.unique(arr_br[:,:,0])[1:]:
-        mask = a[find_br[i-1]]==i
-        a[find_br[i-1]] = a[find_br[i-1]] - mask * i
-    for i in np.unique(arr_br[:,:,n2])[1:]:
-        mask = a[find_br[i-1]]==i
-        a[find_br[i-1]] = a[find_br[i-1]] - mask * i
-    return a
+    iso_z = num==0
+    iso = skel*iso_z
+    label_iso = measure.label(iso, background=0)
+    return (label_iso+np.ones((label_iso.shape))).astype('uint8')    
     
-   
+
+
 def neigh_br(arr_nodes, arr_br):
     """
     Creates a graph with nodes from the array of nodes and branches
@@ -354,42 +266,18 @@ def neigh_br(arr_nodes, arr_br):
     {1: array([1, 2, 3])}
     
     """
-    G = nx.MultiGraph()
+    G = nx.Graph()
+    el = morphology.cube(3)
     nodes = np.unique(arr_nodes)[1:]
-    find_nodes = ndimage.find_objects(arr_nodes)
-    start = np.zeros(3)
-    stop = np.zeros(3)
-    cube = morphology.cube(3)
-    size0 = arr_nodes.shape[0]
-    size1 = arr_nodes.shape[1]
-    size2 = arr_nodes.shape[2]
     for j in nodes:
-        sl = find_nodes[j-1]
-        mask = np.zeros((size0,size1,size2))  
-        mask[sl] = arr_nodes[sl]==j
-        posit = ndimage.measurements.center_of_mass(mask[sl])
-        pos = np.zeros(3)
-        for i in range(3):
-            start[i] = sl[i].start - 1
-            stop[i] = sl[i].stop + 1
-            pos[i] = posit[i] + start[i] + 1
-        #volume with node
-        vol_c_n = mask[start[0]:stop[0], start[1]:stop[1],
-                       start[2]:stop[2]] 
-        #dilation to find the joint branches               
-        dil = ndimage.binary_dilation(vol_c_n, cube)
-        dil = dil.astype('uint8')
-        vol_c = arr_br[start[0]:stop[0], start[1]:stop[1],
-                       start[2]:stop[2]] 
-        #find the labels of connected branches
-        n = np.unique(vol_c * dil)[1:]
-        G.add_node(j, neigh = n, position = pos)
-    
+        mask = arr_nodes==j
+        dil = morphology.binary_dilation(mask, el)
+        vol_c = arr_br * (dil.astype('uint8'))
+        G.add_node(j, neigh=np.unique(vol_c)[1:])
     return G
 
 
-    
-def create_con(graph, arr_br, th):
+def create_con(graph, arr_br):
     """
     Creates the edges in the input graph with nodes that have
     the labels of adjoint branches as an attribute 'neigh'.
@@ -402,7 +290,6 @@ def create_con(graph, arr_br, th):
     ---------
     graph : a graph of nodes
     arr_br : array of labeled regions considered as branches
-    th : the list of mean thicknesses of branches    
     
     Returns
     -------
@@ -437,50 +324,51 @@ def create_con(graph, arr_br, th):
     >>>nx.get_edge_attributes(G_con, 'length')
     {(1, 2): 1, (1, 3): 1, (1, 4): 1}    
     """
-    
     G = graph.copy()
     n = nx.get_node_attributes(G, 'neigh')
-    list_br = [] #the list doesn't influence the code, it just stores
-                 #all branches that have been written to the graph as edges.
-    le = list()
-    num_of_nodes = nx.number_of_nodes(G)
-    nodes = []
-    for i in G.nodes():
-        nodes = np.append(nodes, i)
-    find_br = ndimage.find_objects(arr_br)
-    un = np.unique(arr_br)[1:]
-    for k in un:
-        mask = arr_br[find_br[k-1]]
-        le.append(np.count_nonzero(mask))
-    le_dict = dict(zip(un, le)) #dictionary of lengthes
-    th_dict = dict(zip(un, th))
-    br_dict = {} #dictionary of branches
-    for k in n:
-        for v in n[k]:
-            br_dict.setdefault(v, []).append(k)
-    for k in br_dict:
-        n1 = br_dict[k][0]
-        if len(br_dict[k])==2:
-            n2 = br_dict[k][1]
-            G.add_edge(min(n1,n2), max(n1, n2), length = le_dict[k], thick = th_dict[k], number=[k])
-            list_br = np.append(list_br, k)
-        if len(br_dict[k])==1:
-            num_of_nodes += 1
-            G.add_edge(min(n1, num_of_nodes), max(n1, num_of_nodes), length = le_dict[k], thick = th_dict[k], number=[k])
-            list_br = np.append(list_br, k)
-        if len(br_dict[k])>2: #test
-            error
-
-    return G
-
-#If it is necessary to take into account the isolated nodes and
-#include them to graph
-def add_isol_nodes(graph, arr_iso):
-    G = graph.copy()
-    nodes = np.unique(arr_iso)[1:]
-    n = nx.number_of_nodes(G)
+    nodes = G.nodes()
+    list_br = [0]
     for i in nodes:
-        G.add_node(n+1)
-        n+=1
+        for k in n[i]:
+            flag = True            
+            mask = arr_br==k
+            # you could compute all the length outside of the i loop
+            # and store them into a dictionary
+            # here they are computed many times
+            le = len(np.transpose(np.nonzero(mask)))
+            for l in nodes:
+                if ((k in n[l]) and (i != l)):
+                    G.add_edge(i,l, length = le)
+                    flag = False
+                    break               
+            # not sure I understand the use of flag
+            if flag:
+                G.add_edge(i, G.number_of_nodes()+1, length = le)
+            list_br = np.append(list_br, k)
+    for i in np.unique(arr_br):
+        if (i not in list_br):
+            mask = arr_br==i
+            le = len(np.transpose(np.nonzero(mask)))
+            G.add_edge(G.number_of_nodes()+1, G.number_of_nodes()+2, length = le) 
     return G
-  
+
+
+def add_isol_points(graph, arr_is):
+    """
+    Adds the points as nodes to the input graph using the
+    array of labeled isolated regions.
+    
+    Parameters
+    ---------
+    graph : a graph
+    arr_is : an array of labeled regions considered as isolated points
+    
+    Returns
+    -------
+    G : a copy of input graph with isolated nodes added
+    """
+    G = graph.copy()
+    for i in np.unique(arr_is)[1:]:
+        G.add_node(G.number_of_nodes()+1)
+    return G
+    
