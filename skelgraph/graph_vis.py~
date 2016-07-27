@@ -5,7 +5,7 @@ Created on Wed Apr 20 15:51:33 2016
 @author: yuliya
 
 The module allows to visualize the graphs. It also contains
-all necessary functions for break-ups detection.
+all necessary functions for the break-ups detection.
 """
 
 import networkx as nx

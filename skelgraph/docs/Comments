@@ -1,0 +1,13 @@
+This package skelgraph contains the most important scripts that I used during my internship.
+
+- skeletonize.py : The module for the initial .h5 files preparation and skeletonization.
+
+- skel_graph_transform.py : Creates skeletons as .h5 files, computes distance transform, creates NetworkX graphs from the skeletons.
+
+- label_method.py : Contains all function that are necessary for skel_graph_transform.py.
+
+- graph_vis.py : Visualization of the graphs. It also contains the function for break-ups detection.
+
+- graph_analysis.py : All the processing of the graphs that I made (almost). There can be dificulties with input data because I tried
+                      to collect all the experiments together. It is better to copy the necessary block and to redefine all the inputs. 
+
