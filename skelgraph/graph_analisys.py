@@ -23,7 +23,7 @@ from scipy import ndimage
 
 def len_hist():
     """
-    length histogram
+    Length histogram
     """
     data = glob.glob('/backup/yuliya/v34/graphs/*_1.gpickle')
     data.sort()
@@ -38,15 +38,16 @@ def len_hist():
 
 #--------------------------
 #input data
-d1 = list()
-d = list()
+d1 = list()    #I create a list that will contain the data of all 4 experiments. The elements
+d = list()     #correspond to the elements of pa list, d[0], d1[0] to v34, d[1], d1[1] to vsi05 etc.
+
 
 data1 = glob.glob('/backup/yuliya/v34/breakups_con/fixed/*.npy')
 data1.sort()
 data = glob.glob('/backup/yuliya/v34/graphs/fixed/*_no_term_br.gpickle')
 data.sort()
 
-d1.append(data1)
+d1.append(data1) #Add data to list
 d.append(data)
 
 data1 = glob.glob('/backup/yuliya/vsi05/breakups_con_correction/dict/fixed/*.npy')
@@ -96,11 +97,11 @@ ellv35[22:-1] = ellv35[23:]
 
 ellv23 = np.load('/backup/yuliya/v23/dataellg_ellp.npy')[53:]
 
-ell = list()
-ell.append(ellv34)
-ell.append(ellvsi05)
-ell.append(ellv30)
-ell.append(ellv35)
+ell = list() #The same trick as for d, d1 : list of length scales for all 4 experiments
+ell.append(ellv34[:-3])
+ell.append(ellvsi05[:-1])
+ell.append(ellv30[:-2])
+ell.append(ellv35[:-9])
 #eu = np.load('/backup/yuliya/v34/graphs/Euler.npy')[12:-1]
 #vol = np.load('/backup/yuliya/v34/volumes_pd.npy')[13:-1]
 #vol = np.load('/backup/yuliya/v34/volumes_pd.npy')[60:114]
@@ -122,9 +123,14 @@ def fit_d(x, a, b):
     
 def length_distr_total():
     """    
-    Length distribution total
+    Length distribution total (all images). For all the branches and broken ones.
+    
+    d1 : array of lists of pathes for the break-ups dictionaries.
+    d : array of lists of pathes for the graphs
+    ell : array of lists of length scales
+    pa : list of experiment names (pathes)
     """
-    for data, data1, path, el, t in zip(d, d1, pa, ell, ti):
+    for data, data1, path, el in zip(d, d1, pa, ell):
         l1 = list() #all branches
         l2 = list() #breaking branches
         u = 0
@@ -154,7 +160,8 @@ def length_distr_total():
         #np.save('/home/yuliya/codes/lengths/' + path + '/total_lno_break_len.npy', center2)
         #np.save('/home/yuliya/codes/lengths/' + path + '/total_lno_all.npy', hist1/float(len(l1)))
         #np.save('/home/yuliya/codes/lengths/' + path + '/total_lno_break.npy', hist2/float(len(l1)))
-    #
+
+    #Plot it
     ##plt.figure(2)
     #hist1, bins1 = np.histogram(l1, np.arange(0, max(l1)+1, 0.06))
     #hist2, bins2 = np.histogram(l2, np.arange(0, max(l2)+1, 0.06))
@@ -215,6 +222,11 @@ def short_branches():
 def length_distr_dyn():
     """
     Length distributions evolving in time.
+    
+    d1 : array of lists of pathes for the break-ups dictionaries.
+    d : array of lists of pathes for the graphs
+    ell : array of lists of length scales
+    pa : list of experiment names (pathes)
     """
     av = [20, 12, 12, 13] #Number of images for avereging for each experiment. Here 
                             #we use 20 images for one plot for v34 experiment etc.
@@ -262,8 +274,14 @@ def length_distr_dyn():
 def thick_distr_dyn():
     """
     Thickness distributions evolving in time.
+    
+    d1 : array of lists of pathes for the break-ups dictionaries.
+    d : array of lists of pathes for the graphs
+    ell : array of lists of length scales
+    pa : list of experiment names (pathes)
+
     """
-    av = [20, 12, 12, 13]
+    av = [20, 12, 12, 13] #Number of images per experiment for the averaging.
 
     for data, data1, path, el, a in zip(d, d1, pa, ell, av):
         l1 = list() #all branches
@@ -305,6 +323,9 @@ def thick_distr_dyn():
 def degree_nodes():
     """
     Degree of nodes histogram.
+    
+    d[0] : list of pathes for the graphs (here v34 experiment)
+
     """
     for i in d[0][::5]:
         g = nx.read_gpickle(i)
@@ -315,7 +336,7 @@ def degree_nodes():
 
 def thick_distr_total():
     """
-    Thickness distributions.
+    Thickness distributions for all images. For all the branches (hist1) and the broken ones (hist2).
     """
     for data, data1, path, el in zip(d, d1, pa, ell):
         l1 = list() #all branches
@@ -393,9 +414,16 @@ def mean_length():
 def aspect_rat_distr_total():
     """
     Aspect ratio distribution.
+    
+    d1 : list of pathes for the break-ups dictionaries. Used here for the 
+            estimation of the necessary number of pairs.
+    d : list of pathes for the graphs
+    ell : list of length scales
+    pa : array of the pathes to the experiments folder (to save data)
+
     """
 
-    for data, data1, path, el, t in zip(d, d1, pa, ell, ti):
+    for data, data1, path, el in zip(d, d1, pa, ell):
         l1 = list() #all branches
         l2 = list() #breaking branches
         u = 0
@@ -444,7 +472,7 @@ def aspect_rat_distr_total():
     plt.ylabel('Breakup Probability', fontsize = 18)
 
 
-def correl():
+#def correl():
 ###length-thickness correlation
 #l1, l2 =list(), list()
 #t1, t2 = list(), list()
@@ -760,10 +788,16 @@ def random_pairs_dist(data1, data, el):
         u+=1
     return d_ran
 
-def distance_correl():
+def distance_correl(d1, d, ell):
     """
     Computation of distribution of distances between random pairs of branches
     and random break-ups.
+    
+    Parameters
+    -------------
+    d1 : array of the lists of pathes for the break-ups dictionaries.
+    d : array of the lists of pathes for the graphs
+    el : array of the lists of length scales
     
     """
     d_skel1 = list()
@@ -794,7 +828,19 @@ def distance_correl():
     plt.ylabel('P(dist/l_typ)', fontsize=18)
 
 #####probability to break
-def prob_break():
+def prob_break(data, data1):
+    """
+    Break-up probability.
+    
+    Parameters
+    ----------
+    data : pathes to the graphs.
+    data1 : pathes to the break-up dictionnaries of form #edge:slice
+    
+    Return
+    ------
+    ratio1 : a list of break-up frequencies 
+    """
     u = 0
     ratio1 = []
     for i, j in zip(data, data1):
@@ -831,6 +877,7 @@ def topology(data, ell):
     data : array of pathes to the graphs
     ell : list of length scales
     """    
+
     for i in data:
         G = nx.read_gpickle(i)
         B = nx.number_of_edges(G)
@@ -841,13 +888,6 @@ def topology(data, ell):
         c_t.append(C)
         vert.append(V)
         bran.append(B)
-        plt.figure(2)
-        plt.plot(t[k], C, '.', color='red')
-        plt.xlabel('t, s', fontsize=18)
-        plt.ylabel('log C_t, (B - V)/V', fontsize=18)
-        plt.yscale('log')
-        plt.ylabel('Euler char., V - B', fontsize=18)
-        k += 1
 
     plt.plot(ell, c_t, '.', label='v23')
     #
@@ -857,9 +897,9 @@ def topology(data, ell):
     #np.save('/backup/yuliya/v23/graphs_largedom/B.npy', bran)
     #np.save('/backup/yuliya/vsi01/graphs_largdom/time.npv23/graphs_largedom/y', t)
     plt.yscale('log')
-    plt.xscale('log')   
+#    plt.xscale('log')   
     #plt.savefig('/backup/yuliya/v34/graphs/v34_logC_t.png', dpi=500)
-    plt.close()    
+#    plt.close()    
     
     
     
